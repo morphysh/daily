@@ -1,0 +1,151 @@
+<html>
+	<head>
+		<title>case1</title>
+		<meta http-equiv="X-UA-Compatible" content="charset=utf-8" />
+		<script type="text/javascript" src="Oak3D_v_0_5_1_Debug.js"></script>
+		<script type="text/javascript">
+			var canvas;
+			var rc;
+			var canvas_width = 640;
+			var canvas_height = 480;
+			var Max_val = 2147483647;
+			var i = 0;
+			var size = 6;
+			var objtree;
+			
+			function Rand() {
+				return Math.floor(Math.random()*Max_val);
+			}
+			
+			function Gauss(fmin, fmax) {
+				var a = Rand(), b = Rand(), c = Rand(), d = Rand();
+				var x = a+b+c+d;
+				var y = (x*Math.sqrt(3))/Max_val-Math.sqrt(12);
+				var mid = (fmin+fmax)/2;
+				var z = mid+(fmax-mid)*y/(2*Math.sqrt(3));
+				return z;
+			}
+			
+			function Tree(nsize) {
+				this.R = new Array(nsize+1);
+				this.H = new Array(nsize+1);
+				this.Z = new Array(nsize+1);
+				this.random = new Array();
+
+				this.R[nsize] = 3;
+				this.H[nsize] = this.Z[nsize] = 30;
+				
+				this.k = 0.8;
+				this.p = 0.6;
+				this.q = 0.5;
+				this.m = 0.7;
+				this.alpha = 45;
+				
+				for (var i = nsize-1; i >= 0; i--)
+				{
+					this.R[i] = this.R[i+1]*q;
+					this.H[i] = this.H[i+1]*m;
+					this.Z[i] = this.Z[i+1]*p;
+				}
+			}
+			
+			function createTree(n) {
+				if (n == 0)
+				{
+					objtree.random.push(Gauss(0.4, 0.7));
+					objtree.random.push(Gauss(10, 50));
+				}
+				else 
+				{
+					objtree.random.push(Gauss(0.0, 0.4));
+					objtree.random.push(Gauss(30, 80));
+					objtree.random.push(Gauss(40, 70));
+					createTree(n-1);
+
+					objtree.random.push(Gauss(0.0, 0.4));
+					objtree.random.push(Gauss(140, 200));
+					objtree.random.push(Gauss(40, 70));
+					createTree(n-1);
+
+					objtree.random.push(Gauss(0.0, 0.4));
+					objtree.random.push(Gauss(260, 320));
+					objtree.random.push(Gauss(40, 70));
+					createTree(n-1);
+					
+					objtree.random.push(Gauss(0.0, 0.4));
+					objtree.random.push(Gauss(5, 15));
+					objtree.random.push(Gauss(30, 50));
+					createTree(n-1);
+				}
+			}
+			
+			function draw(n) {
+				meshColume = new okMesh(rc);
+				if (n == 0)
+				{
+					var h = objtree.random[i++];
+					okGenColumnMesh(meshColume, objtree.k*objtree.R[n], objtree.H[n]*h, 20, false);
+
+					
+					meshColume.getMaterial().setAmbient(0, 0, 0);
+					meshColume.getMaterial().setDiffuse(0.88, 0.66, 0.22);
+					meshColume.getMaterial().setSpecular(0.92, 0.9, 0);
+					meshColume.getMaterial().setSpecularLevel(80);
+					// meshColume.getSkin(); //mesh skin
+					
+					var trans1 = okMat4Mul(okMat4Trans(0, 0, objtree.H[0]*h), okMat4RotX(objtree.random[i++]));
+					var trans2 = okMat4Mul(trans1, okMat4RotY(45));
+					var trans3 = okMat4Mul(trans2, okMat4RotX(90));
+					
+					cube = new okMesh(rc);
+					okGenBoxMesh(cube, new okVec3(0,0,0), new okVec3(1,1,1), false);
+
+				}
+				else
+				{
+					meshColume.getMaterial().setSpecular(0, 0, 0);
+					meshColume.getMaterial().setAmbient(0.2, 0.3, 0.2);
+					meshColume.getMaterial().setDiffuse(0.2, 0.3, 0.2);
+					
+					if (n != size)
+					{
+					    okGenColumnMesh(meshColume, objtree.k*objtree.R[n], objtree.H[n], 20, false);
+					    var trans1 = okMat4Trans(0, 0, objtree.H[n]);
+					}
+					else
+					{
+					    okGenColumnMesh(meshColume, objtree.k*objtree.R[n], objtree.H[n]/5, 20, false);
+					    var trans1 = okMat4Trans(0, 0, objtree.H[n]/6);
+					}
+				}
+			}
+			function initScene() {
+			    rc.clearColor(0.8, 0.8, 0.8, 1.0);
+			    rc.clearDepth(1.0);
+			    rc.enable(OAK.DEPTH_TEST);
+			    rc.depthFunc(OAK.LEQUAL);
+			    
+			    objtree = new Tree(size);
+			    createTree(size);
+			    
+			    
+			};
+			
+			function renderScene() {
+			    
+			};
+			
+			
+
+			function onLoad() {
+				canvas = okGenCanvas(canvas_width, canvas_height, document.getElementById("renderArea"));
+				canvas.getContext("experimental-webgl");
+				initScene();
+				//alert(Gauss(2, 210));
+			}
+		</script>
+	</head>
+	<body onload="onLoad();">
+		<canvas id="renderArea"></canvas>
+	</body>
+</html>

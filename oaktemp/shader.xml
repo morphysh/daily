@@ -1,0 +1,42 @@
+<OakShader>
+	<Common>
+		varying vec3 normal_vary; //fragment normal	
+	</Common>
+
+	<Vertex>
+		attribute vec3 position; //vertex position
+		attribute vec3 normal; //vertex normal
+	    
+	    //world transform matrix and projection transform matrix
+		uniform mat4 matWorld, matViewProj;
+	    
+		void main(void) {
+			//assign value to the fragment normal
+			//the normal of every fragments will be rasterized from the vertices' normal
+			normal_vary = normal;
+	        
+			//transform the vertex position to the post-projection space
+			gl_Position = matViewProj * matWorld * vec4(position, 1.0);
+		}
+	</Vertex>
+
+	<Fragment>
+		uniform vec3 ambient, diffuse; //the ambient color and diffuse color of the mesh
+	               
+		void main(void) {
+			//the negtive of the light direction vector
+			vec3 L = normalize(vec3(0.5, 0.5, 0.5)); 
+			vec3 N = normalize(normal_vary); //the normal
+	        
+			//calculate the diffuse intensity
+			float diffuse_intensity = pow((dot(L, N) + 1.0) * 0.5, 2.0); 
+	        
+			//combine the final lighting color
+			vec3 color = ambient * 0.3 + min(diffuse_intensity * diffuse, vec3(1, 1, 1));
+	        
+			//combine the ambient factor and the diffuse factor to the final output color
+			gl_FragColor = vec4(color, 1);
+		}
+	</Fragment>
+
+</OakShader>
