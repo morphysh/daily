@@ -11,7 +11,9 @@
 			var Max_val = 2147483647;
 			var i = 0;
 			var size = 6;
-			var objtree;
+			var objtree; //tree object
+			var programe, fs, vs;
+			var cam;
 			
 			function Rand() {
 				return Math.floor(Math.random()*Max_val);
@@ -43,9 +45,9 @@
 				
 				for (var i = nsize-1; i >= 0; i--)
 				{
-					this.R[i] = this.R[i+1]*q;
-					this.H[i] = this.H[i+1]*m;
-					this.Z[i] = this.Z[i+1]*p;
+					this.R[i] = this.R[i+1]*this.q;
+					this.H[i] = this.H[i+1]*this.m;
+					this.Z[i] = this.Z[i+1]*this.p;
 				}
 			}
 			
@@ -80,7 +82,7 @@
 			}
 			
 			function draw(n) {
-				meshColume = new okMesh(rc);
+				var meshColume = new okMesh(rc);
 				if (n == 0)
 				{
 					var h = objtree.random[i++];
@@ -96,6 +98,12 @@
 					var trans1 = okMat4Mul(okMat4Trans(0, 0, objtree.H[0]*h), okMat4RotX(objtree.random[i++]));
 					var trans2 = okMat4Mul(trans1, okMat4RotY(45));
 					var trans3 = okMat4Mul(trans2, okMat4RotX(90));
+					
+					programe.setUniformMat4("matWorld", trans3);
+					programe.setUniformFloat3("ambient", meshColume.getMaterial().getAmient());
+					programe.setUniformFloat3("diffuse", meshColume.getMaterial().getDiffuse());
+                    programe.setUniformFloat3("specular", meshColume.getMaterial().getSpecular());
+                    
 					
 					cube = new okMesh(rc);
 					okGenBoxMesh(cube, new okVec3(0,0,0), new okVec3(1,1,1), false);
@@ -120,7 +128,7 @@
 				}
 			}
 			function initScene() {
-			    rc.clearColor(0.8, 0.8, 0.8, 1.0);
+			    rc.clearColor(0.8, 0.8, 0.8, 1);
 			    rc.clearDepth(1.0);
 			    rc.enable(OAK.DEPTH_TEST);
 			    rc.depthFunc(OAK.LEQUAL);
@@ -128,7 +136,35 @@
 			    objtree = new Tree(size);
 			    createTree(size);
 			    
+			    var requestSh = okGenXmlHttpRequest();
+			    requestSh.open("GET", "shader.xml", false);
+			    requestSh.send();
 			    
+			    vs = new okShader(rc, OAK.VERTEX_SHADER);
+			    fs = new okShader(rc, OAK.FRAGMENT_SHADER);
+			    okResourceParser.loadShaderSource(OAK.RESDOCTYPE_XML, vs, fs, requestSh.responseText);
+			    vs.compile();
+			    fs.compile();
+			    
+			    programe = new okProgram(rc);
+			    programe.attachVertexShader(vs);
+			    programe.attachFragmentShader(fs);
+			    programe.link();
+			    
+			    cam = new okCamera(rc);
+			    cam.setViewport(0, 0, canvas_width, canvas_height);
+			    cam.setProjMode(OAK.PROJMODE_PERSPECTIVE);
+			    cam.setVisibleRange(1, 1000);
+			    cam.setPos(0, 0, 10);
+
+                cam.bindViewPort();
+                			    
+			    rc.clear(OAK.COLOR_BUFFER_BIT | OAK.DEPTH_BUFFER_BIT);
+			    programe.bind();
+			    
+			    programe.setUniformMat4("matViewProj", camScene.getViewProj4());
+			    
+			    draw(n);
 			};
 			
 			function renderScene() {
@@ -139,13 +175,15 @@
 
 			function onLoad() {
 				canvas = okGenCanvas(canvas_width, canvas_height, document.getElementById("renderArea"));
-				canvas.getContext("experimental-webgl");
+				rc = canvas.getContext("experimental-webgl");
 				initScene();
 				//alert(Gauss(2, 210));
+				
+				// setInterval(renderScene, 1000);
 			}
 		</script>
 	</head>
 	<body onload="onLoad();">
-		<canvas id="renderArea"></canvas>
+		<div id="renderArea"></canvas>
 	</body>
 </html>
